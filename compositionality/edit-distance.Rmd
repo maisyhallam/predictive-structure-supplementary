@@ -1,0 +1,203 @@
+---
+title: "edit-distance"
+author: "Maisy Hallam"
+date: "2024-06-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggtext)
+library(ggExtra)
+library(lme4)
+```
+
+## Import the data
+
+In Python I created a dataframe of different languages, their correlation between form and meaning, and their z-score
+relative to a series of simulations created by randomly sampling form- and meaning distances.
+
+```{r}
+# ed <- read_csv('../data/raw/edit_distance_UPDATED_NEW_KINTYPES.csv')
+
+# ed <- read_csv('../data/raw/edit_distance_UPDATED_SEMD.csv')
+
+ed <- read_csv('../data/raw/average_edit_distance.csv')
+ed <- filter(ed, language != 'ASF_Auslan')
+
+# ed_n <- read_csv('../data/raw/average_edit_distance_nuncles.csv')
+```
+
+```{r}
+theme_set(theme_minimal())
+theme_update(axis.line.x = element_line(color = "black"),
+    axis.line.y = element_line(color = 'black'))
+```
+
+```{r}
+ed %>%
+  ggplot(aes(x = family, y = z)) +
+  geom_point() +
+  geom_hline(yintercept = 1.96) +
+  geom_hline(yintercept = -1.96) +
+  # geom_rect(aes(xmin = 0, xmax = Inf, ymin = -1.96, ymax = 1.96)) +
+  annotate("rect", xmin = 0, xmax = Inf, ymin = -1.96, ymax = 1.96,
+        alpha = .2) +
+  scale_y_continuous(breaks = c(-15,-10,-5,-1.96,0,1.96,5)) +
+
+  coord_flip() +
+  labs(
+    title = 'z-scored correlation between edit distance and semantic distance'
+  )
+
+ggsave('../plots/edit_distance_z_UPDATED.png')
+```
+
+```{r}
+ed %>%
+  ggplot(aes(x = family, y = average_edit_distance)) +
+  geom_point() +
+  coord_flip()
+```
+
+
+```{r}
+ed %>%
+  ggplot(aes(x = average_edit_distance)) +
+  geom_histogram() +
+  labs(
+    title = 'correlations between edit distance and semantic distance')
+  )
+```
+
+```{r}
+mi <- read_csv('../data/raw/kinbank_mi_FINAL.csv')
+
+mi_z <- read_csv('../data/processed/z_scores_UPDATED.csv')
+
+```
+
+```{r}
+all <- merge(ed,mi,.by = code)
+
+all_z <- merge(ed,mi_z, .by = code)
+
+all_z <- all_z %>%
+  rename(
+    edit_distance_z = z,
+    mutual_information_z = zscore)
+```
+
+
+```{r}
+all %>% filter(mutual_information > 0)
+```
+
+```{r}
+plot <- all %>% filter(mutual_information > 0) %>%
+  ggplot(aes(x = mutual_information, y = z)) +
+  geom_point() +
+  geom_smooth(colour = '#d95f50', method='lm') +
+  geom_hline(yintercept = 1.96,linetype = 'dashed') +
+  geom_hline(yintercept = -1.96,linetype = 'dashed') +
+  # geom_hline(yintercept = 1.96,linetype = 'dashed') +
+  # geom_hline(yintercept = -1.96,linetype = 'dashed')+
+  # geom_label(
+  #   label="correlation = 0.16", 
+  #   x=2.5,
+  #   y=5.5,
+  #   label.padding = unit(0.55, "lines"), # Rectangle size around label
+  #   label.size = 0.35
+  # ) +
+    geom_rug(alpha = 0.2) +
+    labs(title = 'correlation between average edit distance and mutual information',
+       x = 'mutual information',
+       y = 'z-score average edit distance')
+
+ggMarginal(plot,type = 'histogram', fill = '#d95f50', colour = '#d95f50',alpha = 0.2)
+
+# data=labels, mapping=aes(x=0.75, y=4, label=paste0('n = ', n))
+
+ggsave('../plots/edit_distance_vs_mi_w_density.png')
+```
+
+
+
+```{r}
+z_plot <- all_z %>% filter(mutual_information_z != 0) %>%
+  ggplot(aes(x = mutual_information_z, y = edit_distance_z)) +
+geom_point() + 
+  geom_smooth(colour = '#d95f50', method='lm') +
+  geom_hline(yintercept = 1.96,linetype = 'dashed') +
+  geom_hline(yintercept = -1.96,linetype = 'dashed') +
+  geom_vline(xintercept = 1.96,linetype = 'dashed') +
+  geom_vline(xintercept = -1.96,linetype = 'dashed') +
+  geom_rug(alpha = 0.2) +
+
+  # geom_label(
+  #   label="correlation = 0.16", 
+  #   x=2.5,
+  #   y=5.5,
+  #   label.padding = unit(0.55, "lines"), # Rectangle size around label
+  #   label.size = 0.35
+  # ) +
+    labs(title = 'correlation between extreme values of edit distance and mutual information',
+       x = 'z-score mutual information',
+       y = 'z-score average edit distance')
+
+ggMarginal(z_plot,type = 'histogram', fill = '#d95f50', colour = '#d95f50',alpha = 0.2,size = 10)
+
+
+# data=labels, mapping=aes(x=0.75, y=4, label=paste0('n = ', n))
+
+ggsave('../plots/edit_distance_vs_mi_z_w_density.png')
+
+```
+
+```{r}
+true_value_plot <- all %>% filter(mutual_information > 0) %>%
+  ggplot(aes(x = mutual_information, y = average_edit_distance)) +
+geom_point() + 
+  geom_smooth(colour = '#d95f50', method='lm') +
+  geom_rug(alpha = 0.2) +
+
+  # geom_hline(yintercept = 1.96,linetype = 'dashed') +
+  # geom_hline(yintercept = -1.96,linetype = 'dashed') +
+  # geom_vline(xintercept = 1.96,linetype = 'dashed') +
+  # geom_vline(xintercept = -1.96,linetype = 'dashed') +
+  # geom_label(
+  #   label="correlation = 0.16", 
+  #   x=2.5,
+  #   y=5.5,
+  #   label.padding = unit(0.55, "lines"), # Rectangle size around label
+  #   label.size = 0.35
+  # ) +
+    labs(title = 'correlation between average edit distance and mutual information',
+       x = 'mutual information',
+       y = 'average edit distance')
+
+ggMarginal(true_value_plot,type = 'histogram', fill = '#d95f50', colour = '#d95f50',alpha = 0.2,size = 10)
+
+
+# data=labels, mapping=aes(x=0.75, y=4, label=paste0('n = ', n))
+
+ggsave('../plots/avg_edit_distance_vs_mi.png')
+```
+
+
+
+Speak with Fiona about whether it is necessary to use phylogenetically independent contrasts to check
+for the relationship between edit distance and mutual information. We are implicitly making a claim about whether they co-evolve, after all (e.g. low edit distance implies high MI and low MI implies low edit distance).
+
+```{r}
+library(lmerTest)
+
+all_z <- filter(all_z, mutual_information_z != 0, edit_distance_z != 0)
+
+ed_mdl <- lmer(mutual_information_z ~ edit_distance_z + (1|language_family), data = all_z)
+
+summary(ed_mdl)
+```
+
+
