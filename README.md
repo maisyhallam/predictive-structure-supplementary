@@ -1,5 +1,9 @@
 This repo contains the analysis files and data associated with Hallam et al. (2024).
 
-The directory `experiment` contains the analysis files and data for the experiment in Section 3.
+Note: to run the typological analysis, you will need the Kinbank database: https://github.com/kinbank/kinbank.
 
-Data and analysis files for the typological studies in Sections 1 and 2 are coming soon.
+The directory `typology` contains the analysis files and data for the typological study in Section 1.
+
+The directory `compositionality` contains the analysis files and data for the study in Section 2.
+
+The directory `experiment` contains the analysis files and data for the experiment in Section 3.
